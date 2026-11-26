@@ -43,6 +43,12 @@
 | 面板 | `modules/panel` | 站点状态、访问统计、快捷入口 |
 | 后台美化 | `modules/admin` | Typecho 后台的 CSS/JS 覆盖 |
 
+### mirror · 静态镜像实时同步
+
+把 GitHub Pages 上的镜像从「每天一张照片」变成「实时页面」：
+主站提供只读 JSON 网关 `mirror-api.php`，镜像页面加载 `mirror-bridge.js`，
+把文章列表、正文、弹幕、音乐库、云盘当场接回来。见 [`modules/mirror/`](modules/mirror/README.md)。
+
 ## 部署路径
 
 仓库只放**主题与模块源码**，不含 Typecho 核心、数据库和上传文件。按下面的映射放进去即可：
@@ -88,39 +94,61 @@ php -S 127.0.0.1:8899 -t /path/to/typecho
 
 ## 部署与同步
 
-### 仓库与站点是什么关系
+### 三个角色
 
 | 对象 | 角色 |
 |---|---|
 | 本仓库 | 源码。主题、模块、部署脚本，**不含**数据库、上传文件、任何密钥 |
-| 主站 `zhangmingshan.wwh.us.ci` | 唯一运行环境。PHP 8.2 + Typecho + SQLite，所有写入都在这里 |
-| Pages `zhangmingshan1089.github.io/blog` | 只读静态快照，给人看、给搜索引擎看、当备份 |
+| 主站 `zhangmingshan.wwh.us.ci` | 唯一数据源。PHP 8.2 + Typecho + SQLite，所有写入都在这里 |
+| Pages `zhangmingshan1089.github.io/blog` | 静态外壳 + 实时数据。骨架是抓的，内容是当场从主站拉的 |
+
+### 镜像为什么不是「死的照片」
+
+GitHub Pages 跑不了 PHP，但浏览器可以跨域 `fetch`。所以主站多了一个只读网关
+`/mirror-api.php`，镜像页面加载时由 `/mirror-bridge.js` 把数据接回来：
+
+| 内容 | 镜像上的表现 | 实现 |
+|---|---|---|
+| 文章列表 / 正文 | 实时 | `?action=posts`、`?action=post&cid=` 覆盖 DOM |
+| 弹幕 | 实时，可发送 | 主站 `/danmaku/` 已开 CORS，footer 原逻辑直接用 |
+| 音乐库 | 实时 | `player.js` 由主站加载，`API` 基址自动指向主站，音频流直连 |
+| 云盘 | 实时 | `?action=drive` 列出已公开分享的文件，下载走主站 |
+| 朋友圈 / 时间轴 / 后台 | 跳主站 | 这些是完整 PHP 页面，镜像里没有等价物 |
+
+网关只读、允许任意来源、60–120 秒缓存，不暴露密码、后台、私有文件。
+`mirror-bridge.js` 放在**主站**而不是仓库里，所以改它不需要重建 Pages。
+构建时按文件内容哈希带版本号（`?v=<md5>`），绕过 12 小时静态缓存。
+
+任何一步失败都静默退回静态快照，页面不会白。
 
 ### 同步方向
 
 | 方向 | 方式 | 频率 |
 |---|---|---|
-| 内容：主站 → Pages | Actions 抓静态快照 | 每天 05:00，也可手动 |
+| 内容：主站 → 镜像 | 页面打开时实时拉取 | 即时 |
+| 弹幕：镜像 → 主站 | 表单直发 `/danmaku/`（带 IP 限流） | 即时 |
+| 骨架：主站 → 镜像 | Actions 抓静态快照重建 | 每天 05:00，也可手动 |
 | 代码：GitHub → 服务器 | 手动拉取 / 上传 | 按需 |
-| 内容：Pages → 主站 | **不支持** | — |
 
-手动同步一次：
+手动重建一次骨架：
 
 ```bash
 gh workflow run mirror.yml -R zhangmingshan1089/blog
 ```
 
-**为什么只有单向**：GitHub Pages 是纯静态托管，没有 PHP、没有 SQLite，写不进 Typecho。评论、搜索、云盘、音乐接口在镜像上都是死的。主站始终是唯一数据源，镜像只是它的照片。
+**仍然做不到的**：在镜像上写文章、改主题、管理云盘。Pages 没有文件系统，
+这些必须回主站。真正「两边都能写」需要把 PHP 后端搬到支持 PHP 的托管平台，
+那时 GitHub 只当代码源，就不再是 Pages 了。
 
-想要"一发文章就同步"，可以在 Typecho 的发布钩子里用 `curl` 调 GitHub API 触发 `workflow_dispatch`，token 存在数据库里，不进仓库。
+### 镜像构建做的事
 
-### 镜像会做什么
+`tools/postprocess.py`：
 
-`tools/postprocess.py` 在三件事上兜底：
-
-1. wget 会把 query 塞进文件名（`tech.js?v=3`），GitHub Pages 按扩展名给 MIME，没有 `.js` 的文件会被当成 `octet-stream`，浏览器拒绝执行 → 剥掉 `?v=NN`
-2. 后台、云盘这些动态入口在镜像上必然 404 → 链接指回主站
-3. 加 `.nojekyll`，避免 Jekyll 吃掉带下划线的目录
+1. 剥掉 `?v=NN` —— wget 会把 query 塞进文件名，Pages 按扩展名给 MIME，`tech.js?v=3` 会被当成 `octet-stream`，浏览器拒绝执行
+2. 后台、云盘等动态入口的链接指回主站
+3. **反向还原**必须实时的资源：`player.js`、`/danmaku/` 指回主站绝对地址
+4. 给每个页面注入 `<script src=".../mirror-bridge.js?v=<hash>" defer>`
+5. 加 `.nojekyll`，避免 Jekyll 吃掉带下划线的目录
 
 ## 许可
 
