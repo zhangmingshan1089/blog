@@ -60,7 +60,20 @@ LIVE = [
     (r'(href=")[^"]*?/index\.php/feed/(")', r'\1%s/index.php/feed/\2' % SITE),
 ]
 
-BRIDGE = '<script src="%s/mirror-bridge.js?v=3" defer></script>' % SITE
+def bridge_version():
+    """取主站上 mirror-bridge.js 的内容哈希做版本号：
+    桥接脚本放在主站，改了立刻生效；带上哈希就能绕过 12 小时静态缓存。"""
+    try:
+        import urllib.request
+        import hashlib
+        raw = urllib.request.urlopen(SITE + '/mirror-bridge.js', timeout=15).read()
+        return hashlib.md5(raw).hexdigest()[:8]
+    except Exception as e:
+        print('bridge version fallback:', e)
+        return '3'
+
+
+BRIDGE = '<script src="%s/mirror-bridge.js?v=%s" defer></script>' % (SITE, bridge_version())
 
 touched = 0
 bridged = 0
