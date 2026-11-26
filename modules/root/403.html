@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>需要权限 · 403</title>
+<style>
+:root{--brand:#2f6fed;--text:#1d2430;--text3:#8b95a5;--line:#e6e9ef}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--text);background:#f4f6f9;display:flex;align-items:center;justify-content:center;
+  padding:24px;line-height:1.75;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse 60% 40% at 50% 0%,#e8eefb 0%,rgba(232,238,251,0) 70%)}
+.card{width:100%;max-width:520px;background:#fff;border:1px solid var(--line);border-radius:20px;
+  padding:38px 34px 32px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 18px 50px rgba(16,24,40,.09);text-align:center}
+.code{display:inline-block;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--brand);
+  background:#eaf1ff;padding:5px 14px;border-radius:999px;margin-bottom:18px}
+h1{margin:0 0 10px;font-size:24px;letter-spacing:.5px}
+p{margin:0 0 10px;color:#5a6577;font-size:14.5px}
+.tip{margin-top:18px;padding:12px 15px;background:#f7f9fc;border:1px solid var(--line);border-radius:12px;
+  font-size:13px;color:var(--text3);text-align:left;line-height:1.7}
+.acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+a.btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 22px;border-radius:10px;
+  font-size:14px;font-weight:600;text-decoration:none;transition:background .2s,transform .2s,box-shadow .2s}
+a.primary{background:var(--brand);color:#fff;box-shadow:0 8px 20px rgba(47,111,237,.3)}
+a.primary:hover{background:#1d4fd0;transform:translateY(-2px);box-shadow:0 12px 26px rgba(47,111,237,.4)}
+a.ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
+a.ghost:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-2px)}
+.foot{margin-top:22px;font-size:12px;color:#aab2be}
+.foot a{color:#aab2be;text-decoration:none}
+.foot a:hover{color:var(--brand)}
+@media(max-width:480px){.card{padding:30px 22px 26px}h1{font-size:20px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="code">403</div>
+  <h1>这里需要权限</h1>
+  <p>这个地址不对访客开放，或者链接已经失效了。</p>
+  <p>如果你是从别处点过来的，多半是旧链接；回首页重新找一下就行。</p>
+
+  <div class="tip">
+    这是服务器层面的访问限制，不是页面出错。文章、朋友圈、云盘这些公开内容都是可以直接看的 ——
+    只有后台和写操作需要登录。
+  </div>
+
+  <div class="acts">
+    <a class="btn primary" href="/">回首页</a>
+    <a class="btn ghost" href="/index.php/archives.html">看全部文章</a>
+  </div>
+
+  <div class="foot">
+    <a href="/index.php/about.html">关于本站</a> · <a href="/sitemap.xml">站点地图</a>
+  </div>
+</main>
+</body>
+</html>

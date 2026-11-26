@@ -1,0 +1,21 @@
+# robots.txt · MC.跃小叮当的博客
+# 公开内容全部放行；后台、写接口、API 与搜索结果页不让爬。
+
+User-agent: *
+Allow: /
+Allow: /index.php/feed/
+
+# 后台与写操作
+Disallow: /admin/
+Disallow: /panel/
+Disallow: /index.php/action/
+Disallow: /moments/?act=
+Disallow: /drive/?act=
+Disallow: /?s=
+
+# 接口（JSON，不是页面）
+Disallow: /danmaku/
+
+# 站点地图
+Sitemap: https://zhangmingshan.wwh.us.ci/sitemap.xml
+Sitemap: https://zhangmingshan.wwh.us.ci/music/sitemap.php

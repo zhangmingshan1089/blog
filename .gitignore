@@ -1,0 +1,25 @@
+# 运行时数据，不入库
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+usr/uploads/
+usr/cache/
+music/uploads/
+music/data.json
+drive/
+.passwd
+*.log
+
+# 本地配置
+config.inc.php
+config.local.php
+.env
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+node_modules/
+.idea/
+.vscode/
+*.swp
