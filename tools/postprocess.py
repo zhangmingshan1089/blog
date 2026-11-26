@@ -8,7 +8,7 @@ GitHub Pages 按扩展名给 Content-Type，没有 .js 的文件会被当成 oct
 浏览器直接拒绝执行 —— 于是风格切换、弹幕、播放器全哑。
 
 这里做三件事：
-1. 文件名里的 `%3Fv=NN` 剥掉（`tech.js%3Fv=3` → `tech.js`）
+1. 文件名里的 `?v=NN` / `%3Fv=NN` 剥掉（`tech.js?v=3` → `tech.js`）
 2. HTML 里对应的引用同步剥掉
 3. 动态模块（后台、云盘）的链接指回主站，别在镜像里点出 404
 """
@@ -17,13 +17,13 @@ import re
 
 OUT = 'public'
 SITE = 'https://zhangmingshan.wwh.us.ci'
-VER_RE = re.compile(r'%3Fv=\d+(\.\w+)?$')
-VER_IN_HTML = re.compile(r'%3Fv=\d+(\.\w+)?')
+VER_RE = re.compile(r'(?:%3F|\?)v=\d+(\.\w+)?$')
+VER_IN_HTML = re.compile(r'(?:%3F|\?)v=\d+(\.\w+)?')
 
 renamed = 0
 for root, _dirs, files in os.walk(OUT):
     for name in files:
-        if '%3Fv=' not in name:
+        if '%3Fv=' not in name and '?v=' not in name:
             continue
         new = VER_RE.sub('', name)
         if not new or new == name:
