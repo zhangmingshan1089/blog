@@ -55,6 +55,8 @@ jobs:
           # 抓完把绝对域名改成相对，保证在 /blog/ 子路径下能跑
           find public -name '*.html' -print0 | xargs -0 -r sed -i \
             -e 's#https://zhangmingshan\.wwh\.us\.ci/##g'
+          # 修 wget 留下的 %3Fv= 文件名（否则 JS 拿不到正确 MIME，会哑）
+          python3 tools/postprocess.py
           echo "--- 抓取结果 ---"
           find public -type f | wc -l
           du -sh public
