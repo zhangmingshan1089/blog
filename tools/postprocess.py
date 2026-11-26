@@ -52,14 +52,15 @@ DYNAMIC = [
 LIVE = [
     # 播放器脚本
     (r'(src=")[^"]*?/?music/player\.js(")', r'\1%s/music/player.js\2' % SITE),
-    # 弹幕接口（footer 内联脚本里的 API 常量）
-    (r'(["\'])/danmaku/\1', r'\1%s/danmaku/\1' % SITE),
+    # 弹幕接口（footer 内联脚本里的 `var API = 'danmaku/'`，wget 已把地址改成相对）
+    (r'(var\s+API\s*=\s*["\'])[^"\']*?danmaku/(["\'])', r'\1%s/danmaku/\2' % SITE),
+    (r'(src=")[^"]*?/danmaku/"', r'\1%s/danmaku/"' % SITE),
     # 站点地图 / RSS（镜像里的也指回主站，免得都是旧的）
     (r'(href=")[^"]*?/sitemap\.xml(")', r'\1%s/sitemap.xml\2' % SITE),
     (r'(href=")[^"]*?/index\.php/feed/(")', r'\1%s/index.php/feed/\2' % SITE),
 ]
 
-BRIDGE = '<script src="%s/mirror-bridge.js?v=2" defer></script>' % SITE
+BRIDGE = '<script src="%s/mirror-bridge.js?v=3" defer></script>' % SITE
 
 touched = 0
 bridged = 0
