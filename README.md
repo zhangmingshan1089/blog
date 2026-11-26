@@ -86,11 +86,41 @@ php -S 127.0.0.1:8899 -t /path/to/typecho
 - 页面缓存落在 `usr/cache/wbpage/`，按 URL 哈希，发布/评论时自动失效
 - 慢网/省流（`saveData`、2G/3G、`deviceMemory<=2`）自动关掉背景动画
 
-## 关于 GitHub Pages
+## 部署与同步
 
-Typecho 是 PHP + SQLite 的动态站，**GitHub Pages 只能托管静态文件，跑不了 PHP**。
+### 仓库与站点是什么关系
 
-所以本仓库的 Pages 是一个**静态镜像**：由 GitHub Actions 定时抓取线上站点生成，只读、供预览与备份用，不承担写入。动态功能（搜索、评论、云盘、音乐播放接口）在镜像上不可用。真正的站点仍跑在自己的服务器上。
+| 对象 | 角色 |
+|---|---|
+| 本仓库 | 源码。主题、模块、部署脚本，**不含**数据库、上传文件、任何密钥 |
+| 主站 `zhangmingshan.wwh.us.ci` | 唯一运行环境。PHP 8.2 + Typecho + SQLite，所有写入都在这里 |
+| Pages `zhangmingshan1089.github.io/blog` | 只读静态快照，给人看、给搜索引擎看、当备份 |
+
+### 同步方向
+
+| 方向 | 方式 | 频率 |
+|---|---|---|
+| 内容：主站 → Pages | Actions 抓静态快照 | 每天 05:00，也可手动 |
+| 代码：GitHub → 服务器 | 手动拉取 / 上传 | 按需 |
+| 内容：Pages → 主站 | **不支持** | — |
+
+手动同步一次：
+
+```bash
+gh workflow run mirror.yml -R zhangmingshan1089/blog
+```
+
+**为什么只有单向**：GitHub Pages 是纯静态托管，没有 PHP、没有 SQLite，写不进 Typecho。评论、搜索、云盘、音乐接口在镜像上都是死的。主站始终是唯一数据源，镜像只是它的照片。
+
+想要"一发文章就同步"，可以在 Typecho 的发布钩子里用 `curl` 调 GitHub API 触发 `workflow_dispatch`，token 存在数据库里，不进仓库。
+
+### 镜像会做什么
+
+`tools/postprocess.py` 在三件事上兜底：
+
+1. wget 会把 query 塞进文件名（`tech.js?v=3`），GitHub Pages 按扩展名给 MIME，没有 `.js` 的文件会被当成 `octet-stream`，浏览器拒绝执行 → 剥掉 `?v=NN`
+2. 后台、云盘这些动态入口在镜像上必然 404 → 链接指回主站
+3. 加 `.nojekyll`，避免 Jekyll 吃掉带下划线的目录
 
 ## 许可
 
