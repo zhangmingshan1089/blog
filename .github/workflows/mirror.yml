@@ -1,0 +1,83 @@
+name: Mirror & Deploy Pages
+
+# 说明：
+# Typecho 是 PHP + SQLite 的动态站，GitHub Pages 跑不了 PHP。
+# 这个工作流每天从线上站点抓一份静态快照发布到 Pages，做预览与备份。
+# 数据方向是单向的：线上 → 镜像。写入、评论、搜索、音乐接口在镜像上不可用。
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mirror.yml'
+  schedule:
+    - cron: '0 21 * * *'   # UTC 21:00 = 北京时间 05:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  SITE: https://zhangmingshan.wwh.us.ci/
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check site is up
+        id: probe
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$SITE" || echo 000)
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "线上返回 $code"
+
+      - name: Mirror site
+        if: steps.probe.outputs.code == '200'
+        run: |
+          set -e
+          mkdir -p public
+          wget --mirror --page-requisites --convert-links --adjust-extension \
+               --no-parent --no-host-directories --directory-prefix=public \
+               --level=3 --timeout=30 --tries=2 --wait=0.2 \
+               --reject-regex '(\?api=|__k=|/panel|/admin|/drive|/publish|/install|/action/|/usr/plugins)' \
+               --user-agent "Mozilla/5.0 (compatible; wbclean-mirror/1.0)" \
+               -e robots=off "$SITE" || true
+          # Pages 用 Jekyll 会吃掉下划线开头的路径，关掉
+          touch public/.nojekyll
+          # 抓完把绝对域名改成相对，保证在 /blog/ 子路径下能跑
+          find public -name '*.html' -print0 | xargs -0 -r sed -i \
+            -e 's#https://zhangmingshan\.wwh\.us\.ci/##g'
+          echo "--- 抓取结果 ---"
+          find public -type f | wc -l
+          du -sh public
+
+      - name: Fallback page
+        if: steps.probe.outputs.code != '200'
+        run: |
+          mkdir -p public
+          touch public/.nojekyll
+          printf '%s' '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>镜像暂时不可用</title><style>body{font:16px/1.8 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:560px;margin:14vh auto;padding:0 24px;color:#1d2430}a{color:#2f6fed}</style></head><body><h1>镜像暂时不可用</h1><p>这次抓取时线上站点没有响应。主站：<a href="https://zhangmingshan.wwh.us.ci/">zhangmingshan.wwh.us.ci</a></p><p>下次定时任务（每天 05:00）会自动重试。</p></body></html>' > public/index.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
